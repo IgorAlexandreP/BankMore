@@ -34,7 +34,7 @@ Geração:
 Validação:
 - [Program.cs (Account)](src/BankMore.Account.API/Program.cs)
 
-**Proteção de Dados Sensíveis**
+**Proteção de Dados Sensíveis** <br>
 Senhas são hashadas com BCrypt antes de serem salvas. O CPF é validado e tratado como Value Object.
 
 Hash de Senha:
