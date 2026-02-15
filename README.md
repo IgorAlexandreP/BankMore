@@ -127,5 +127,5 @@ Uso da biblioteca `KafkaFlow` para configuração fluida e consumidores Kafka.
    docker-compose up -d --build
 
 3. Acesse as documentações Swagger:
-   - Account API: http://localhost:5000/swagger
-   - Transfer API: http://localhost:5132/swagger
+   - Account API: http://localhost:8080/swagger
+   - Transfer API: http://localhost:8081/swagger
