@@ -1,0 +1,78 @@
+version: '3.4'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 22181:2181
+    healthcheck:
+      test: echo srvr | nc zookeeper 2181 || exit 1
+      interval: 10s
+      retries: 5
+      start_period: 5s
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    healthcheck:
+      test: nc -z localhost 9092 || exit 1
+      interval: 10s
+      retries: 5
+      start_period: 10s
+
+  bankmore.account.api:
+    image: bankmore.account.api
+    build:
+      context: .
+      dockerfile: src/BankMore.Account.API/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Data Source=account.db
+      - Kafka__Brokers=kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  bankmore.transfer.api:
+    image: bankmore.transfer.api
+    build:
+      context: .
+      dockerfile: src/BankMore.Transfer.API/Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Data Source=transfer.db
+      - Kafka__Brokers=kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
+      bankmore.account.api:
+        condition: service_started
+
+  bankmore.tariff.worker:
+    image: bankmore.tariff.worker
+    build:
+      context: .
+      dockerfile: src/BankMore.Tariff.Worker/Dockerfile
+    environment:
+      - ConnectionStrings__DefaultConnection=Data Source=tariff.db
+      - Kafka__Brokers=kafka:29092
+    depends_on:
+      kafka:
+        condition: service_healthy
